@@ -99,6 +99,9 @@ namespace Gamma
         string line;
         while ((line = sr.ReadLine()) != null)
         {
+          line = line.Trim();
+          if (line == "" || line[0] == '#')
+            continue;
           ++numberParameters;
           string[] lineTokens = line.Split(':');
           string[] strValues = lineTokens[1].Split(',');
@@ -120,6 +123,9 @@ namespace Gamma
         int kk = 0; // points into parameterValues
         while ((line = sr.ReadLine()) != null)
         {
+          line = line.Trim();
+          if (line == "" || line[0] == '#')
+            continue;
           string[] lineTokens = line.Split(':'); // separate parameter name from parameter values (as strings at this point)
           string[] strValues = lineTokens[1].Split(','); // pull out the individual parameter values into an array
           int[] values = new int[strValues.Length]; // create small row array for legalValues
