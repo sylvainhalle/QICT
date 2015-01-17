@@ -477,7 +477,7 @@ namespace Gamma
         int num_results = testSets.Count;
         if (only_test_count)
         {
-          Console.WriteLine("There are " + num_results + "test cases");
+          Console.WriteLine("There are " + num_results + " test cases");
           return ERR_OK;
         }
         
