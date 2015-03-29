@@ -38,6 +38,7 @@ namespace Gamma
   class Qict
   {
     static bool only_test_count = false;
+	static bool verifTests = false;
     
     // Return codes
     static int ERR_OK = 0;
@@ -45,20 +46,22 @@ namespace Gamma
     static int ERR_EXCEPTION = 2;
     
     static int Main(string[] args) // {{{
-    {
-      string file = "";
-      
+      {
+        string file = "";
+	string invalidCombinanaisonFile = "";
+
       // Process command-line arguments
-      ConsoleWriteLine("QICT: a pairwise test case generator\n(C) 2009 James McCaffrey, (C) 2014 Sylvain Hallé\n");
-      if (args.Length <= 0)
-      {
-        ConsoleWriteLine("ERROR: no filename is specified");
-        return ERR_NO_FILENAME;
-      }
-      
-      for (int i = 0; i < args.Length; i++)
-      {
-        string arg = args[i];
+        ConsoleWriteLine("QICT: a pairwise test case generator\n(C) 2009 James McCaffrey, (C) 2014 Sylvain Hallé\n");
+        if (args.Length <= 0)
+        {
+          ConsoleWriteLine("ERROR: no filename is specified");
+          return ERR_NO_FILENAME;
+        }
+
+        for (int i = 0; i < args.Length; i++)
+        {
+          string arg = args[i];
+
         if (arg == "-c") // Show only test size, not actual tests
         {
           only_test_count = true;
@@ -69,7 +72,16 @@ namespace Gamma
           ShowUsage();
           return ERR_OK;
         }
-        else
+	else if (arg == "-i") // use invalidCombinanaisonFile to check
+        {
+          verifTests = true;
+        }
+	else if (i>=1 && args[i-1] == "-i")
+	{
+
+		invalidCombinanaisonFile= arg;
+	}
+        else 
         {
           file = arg;
         }
@@ -101,7 +113,7 @@ namespace Gamma
         {
           line = line.Trim();
           if (line == "" || line[0] == '#')
-            continue;
+          continue;
           ++numberParameters;
           string[] lineTokens = line.Split(':');
           string[] strValues = lineTokens[1].Split(',');
@@ -125,7 +137,7 @@ namespace Gamma
         {
           line = line.Trim();
           if (line == "" || line[0] == '#')
-            continue;
+          continue;
           string[] lineTokens = line.Split(':'); // separate parameter name from parameter values (as strings at this point)
           string[] strValues = lineTokens[1].Split(','); // pull out the individual parameter values into an array
           int[] values = new int[strValues.Length]; // create small row array for legalValues
@@ -146,7 +158,7 @@ namespace Gamma
         
         ConsoleWrite("- Parameter values:\n  ");
         for (int i = 0; i < parameterValues.Length; ++i)
-          ConsoleWrite(parameterValues[i] + " ");
+        ConsoleWrite(parameterValues[i] + " ");
         ConsoleWriteLine("");
         
         ConsoleWriteLine("- Legal values internal representation: ");
@@ -188,13 +200,16 @@ namespace Gamma
               {
                 allPairsDisplay[currPair, 0] = firstRow[x]; // pair first value
                 allPairsDisplay[currPair, 1] = secondRow[y]; // pair second value
-                
+		if(!(firstRow[x] == 0 && secondRow[y]==3))
+                {
                 int[] aPair = new int[2];
                 aPair[0] = firstRow[x];
                 aPair[1] = secondRow[y];
                 unusedPairs.Add(aPair);
                 
                 unusedPairsSearch[firstRow[x], secondRow[y]] = 1;
+		}
+		//unusedPairsSearch[0, 3] = 0;
                 
                 ++currPair;
               } // y
@@ -217,22 +232,22 @@ namespace Gamma
         //  }
         //}
         
-        //ConsoleWriteLine("unusedPairs List<>:");
-        //for (int i = 0; i < unusedPairs.Count; ++i)
-        //{
-        //  int[] curr = unusedPairs[i];
-        //  ConsoleWriteLine(i + " " + curr[0] + " " + curr[1]);
-        //}
+        ConsoleWriteLine("unusedPairs List<>:");
+        for (int i = 0; i < unusedPairs.Count; ++i)
+        {
+          int[] curr = unusedPairs[i];
+          ConsoleWriteLine(i + " " + curr[0] + " " + curr[1]);
+        }
         
-        //ConsoleWriteLine("allPairsSearch array:");
-        //for (int row = 0; row < numberParameterValues; ++row)
-        //{
-        //  for (int col = 0; col < numberParameterValues; ++col)
-        //  {
-        //    ConsoleWrite(allPairsSearch[row, col] + " ");
-        //  }
-        //  ConsoleWriteLine("");
-        //}
+        ConsoleWriteLine("allPairsSearch array:");
+     	   for (int row = 0; row < numberParameterValues; ++row)
+        {
+          for (int col = 0; col < numberParameterValues; ++col)
+          {
+            ConsoleWrite(unusedPairsSearch[row, col] + " ");
+          }
+          ConsoleWriteLine("");
+        }
         
         // process legalValues to populate parameterPositions array
         parameterPositions = new int[numberParameterValues]; // the indexes are parameter values, the cell values are positions within a testSet
@@ -326,7 +341,7 @@ namespace Gamma
             // generate a random order to fill parameter positions
             int[] ordering = new int[numberParameters];
             for (int i = 0; i < numberParameters; ++i) // initially all in order
-              ordering[i] = i;
+            ordering[i] = i;
             
             // put firstPos at ordering[0] && secondPos at ordering[1]
             ordering[0] = firstPos;
@@ -367,7 +382,7 @@ namespace Gamma
               //  ConsoleWriteLine(possibleValues[z]);
               //ConsoleWriteLine("");
               
-              int currentCount = 0;  // count the unusedPairs grabbed by adding a possible value
+             /* int currentCount = 0;  // count the unusedPairs grabbed by adding a possible value
               int highestCount = 0;  // highest of these counts
               int bestJ = 0;         // index of the possible value which yields the highestCount
               for (int j = 0; j < possibleValues.Length; ++j) // examine pairs created by each possible value and each parameter value already there
@@ -397,8 +412,8 @@ namespace Gamma
                 
               } // j -- each possible value at currPos
               //ConsoleWriteLine("The best value is " + possibleValues[bestJ] + " with count = " + highestCount);
-              
-              testSet[currPos] = possibleValues[bestJ]; // place the value which captured the most pairs
+              */
+               testSet[currPos] = possibleValues[r.Next(possibleValues.Length)]; // place the value which captured the most pairs
             } // i -- each testSet position 
             
             //=========
@@ -408,41 +423,51 @@ namespace Gamma
             //  ConsoleWrite(testSet[i] + " ");
             //ConsoleWriteLine("");
             //ConsoleWriteLine("============================\n");
-            
-            candidateSets[candidate] = testSet;  // add candidate testSet to candidateSets array
+            //
+            	candidateSets[candidate] = testSet;  // add candidate testSet to candidateSets array
+
           } // for each candidate testSet
           
-          //ConsoleWriteLine("Candidates testSets are: ");
-          //for (int i = 0; i < candidateSets.Length; ++i)
-          //{
-          //  int[] curr = candidateSets[i];
-          //  ConsoleWrite(i + ": ");
-          //  for (int j = 0; j < curr.Length; ++j)
-          //  {
-          //    ConsoleWrite(curr[j] + " ");
-          //  }
-          //  ConsoleWriteLine(" -- captures " + NumberPairsCaptured(curr, unusedPairsSearch));
-          //}
+          /*ConsoleWriteLine("Candidates testSets are: ");
+          for (int i = 0; i < candidateSets.Length; ++i)
+          {
+            int[] curr = new int[candidateSets[i].Length];
+            curr = candidateSets[i];
+            ConsoleWrite(i + ": ");
+
+            for (int j = 0; j < curr.Length; ++j)
+            {
+              ConsoleWrite(curr[j] + " ");
+            }
+            ConsoleWriteLine(" ");
+            //ConsoleWriteLine(" -- captures " + NumberPairsCaptured(curr, unusedPairsSearch));
+          }*/
           
           // Iterate through candidateSets to determine the best candidate
           
-          int indexOfBestCandidate = r.Next(candidateSets.Length); // pick a random index as best
-          int mostPairsCaptured = NumberPairsCaptured(candidateSets[indexOfBestCandidate], unusedPairsSearch);
+          int indexOfBestCandidate = 0;//r.Next(candidateSets.Length); // pick a random index as best
+          int mostPairsCaptured = 0;// NumberPairsCaptured(candidateSets[indexOfBestCandidate], unusedPairsSearch);
           
           int[] bestTestSet = new int[numberParameters];
           
           for (int i = 0; i < candidateSets.Length; ++i)
           {
-            int pairsCaptured = NumberPairsCaptured(candidateSets[i], unusedPairsSearch);
-            if (pairsCaptured > mostPairsCaptured)
-            {
-              mostPairsCaptured = pairsCaptured;
-              indexOfBestCandidate = i;
+            if(isValid(candidateSets[i])){
+              int pairsCaptured = NumberPairsCaptured(candidateSets[i], unusedPairsSearch);
+              if (pairsCaptured > mostPairsCaptured)
+              {
+                mostPairsCaptured = pairsCaptured;
+                indexOfBestCandidate = i;
+		//ConsoleWriteLine("----------------------------------"+i);
+              }
+		//ConsoleWriteLine("Candidate " + i + " captured " + mostPairsCaptured);
+		//printTab(candidateSets[i]);
+            
             }
-            //ConsoleWriteLine("Candidate " + i + " captured " + mostPairsCaptured);
           }
-          //ConsoleWriteLine("Candidate number " + indexOfBestCandidate + " is best");
+          ConsoleWriteLine("Candidate number " + indexOfBestCandidate + " is best");
           candidateSets[indexOfBestCandidate].CopyTo(bestTestSet, 0);
+		//printTab(bestTestSet);
           testSets.Add(bestTestSet); // Add the best candidate to the main testSets List
           
           // now perform all updates
@@ -511,37 +536,73 @@ namespace Gamma
     } // Main() }}}
     
     static int NumberPairsCaptured(int[] ts, int[,] unusedPairsSearch)  // number of unused pairs captured by testSet ts {{{
-    {
-      int ans = 0;
-      for (int i = 0; i <= ts.Length - 2; ++i)
       {
-        for (int j = i + 1; j <= ts.Length - 1; ++j)
+        int ans = 0;
+        for (int i = 0; i <= ts.Length - 2; ++i)
         {
-          if (unusedPairsSearch[ts[i], ts[j]] == 1)
+          for (int j = i + 1; j <= ts.Length - 1; ++j)
+          {
+            if (unusedPairsSearch[ts[i], ts[j]] == 1)
             ++ans;
+          }
         }
-      }
-      return ans;
+        return ans;
       } // NumberPairsCaptured() }}}
-    
+
     static void ShowUsage() // {{{
-    {
-      Console.WriteLine("Usage: qict [-c] [-h] filename");
-      Console.WriteLine("  -c     Show only number of tests computed");
-      Console.WriteLine("  -h     Show command-line usage\n");
+      {
+        Console.WriteLine("Usage: qict [-c] [-h] filename");
+        Console.WriteLine("  -c     Show only number of tests computed");
+        Console.WriteLine("  -h     Show command-line usage\n");
+	Console.WriteLine("  -i     use invalid combinaison file\n");
     } // ShowUsage() }}}
     
     static void ConsoleWrite(string msg) // {{{
-    {
-      if (!only_test_count)
+      {
+        if (!only_test_count)
         Console.Write(msg);
     } // ConsoleWrite() }}}
     
     static void ConsoleWriteLine(string msg) // {{{
-    {
-      ConsoleWrite(msg + "\n");
+      {
+        ConsoleWrite(msg + "\n");
     } // ConsoleWrite() }}}
-    
+
+    static bool isValid(int[] combinaison)
+    {
+      int[] arrayA = combinaison;
+      int lengthA = arrayA.Length;
+     for(int i=0; i< lengthA; i++)
+      {
+       ConsoleWrite(" "+arrayA[i]);
+
+     }
+
+     if(arrayA[0]==0 && arrayA[1]==3)
+     {
+      ConsoleWriteLine(" false");
+      return false;
+
+    }
+    ConsoleWriteLine("");
+
+    return true;
+  }
+
+
+static void printTab(int[] combinaison)
+    {
+      int[] arrayA = combinaison;
+      int lengthA = arrayA.Length;
+ConsoleWrite("------------------>");
+      for(int i=0; i< lengthA; i++)
+      {
+       ConsoleWrite(""+arrayA[i]+" ");
+
+     }
+	ConsoleWriteLine("");
+  }
+
   } // class
 } // ns
 // :folding=explicit:wrap=none:
