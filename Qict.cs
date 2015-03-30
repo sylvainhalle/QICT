@@ -30,6 +30,7 @@ or the sample file testData.txt included for more info)
 *************************************************************************/
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 using System.IO;
 
@@ -78,7 +79,6 @@ namespace Gamma
         }
 	else if (i>=1 && args[i-1] == "-i")
 	{
-
 		invalidCombinanaisonFile= arg;
 	}
         else 
@@ -96,12 +96,15 @@ namespace Gamma
       
       int[][] legalValues = null; // in-memory representation of input file as ints
       string[] parameterValues = null; // one-dimensional array of all parameter values
+	string[] parameters = null; //parameters
       int[,] allPairsDisplay = null; // rectangular array; does not change, used to generate unusedCounts array
       List<int[]> unusedPairs = null; // changes
       int[,] unusedPairsSearch = null; // square array -- changes
       int[] parameterPositions = null; // the parameter position for a given value
       int[] unusedCounts = null; // count of each parameter value in unusedPairs List
       List<int[]> testSets = null; // the main result data structure
+
+	
       
       try
       {
@@ -131,8 +134,10 @@ namespace Gamma
         
         legalValues = new int[numberParameters][];
         parameterValues = new string[numberParameterValues];
+	parameters=new string[numberParameters];
         int currRow = 0;
         int kk = 0; // points into parameterValues
+	int jj = 0; //num of line
         while ((line = sr.ReadLine()) != null)
         {
           line = line.Trim();
@@ -140,6 +145,7 @@ namespace Gamma
           continue;
           string[] lineTokens = line.Split(':'); // separate parameter name from parameter values (as strings at this point)
           string[] strValues = lineTokens[1].Split(','); // pull out the individual parameter values into an array
+	parameters[jj]=lineTokens[0];
           int[] values = new int[strValues.Length]; // create small row array for legalValues
           
           for (int i = 0; i < strValues.Length; ++i) // trim whitespace
@@ -151,6 +157,7 @@ namespace Gamma
           }
           
           legalValues[currRow++] = values;
+		jj++;
         } // while
         
         sr.Close();
@@ -181,11 +188,35 @@ namespace Gamma
           }
         }
         ConsoleWriteLine("- There are " + numberPairs + " pairs ");
+
+	
         
         // process the legalValues array to populate the allPairsDisplay & unusedPairs & unusedPairsSearch collections
         allPairsDisplay = new int[numberPairs, 2]; // rectangular array; does not change
         unusedPairs = new List<int[]>(); // List of pairs which have not yet been captured
         unusedPairsSearch = new int[numberParameterValues, numberParameterValues]; // square array -- changes
+
+        // process legalValues to populate parameterPositions array
+        parameterPositions = new int[numberParameterValues]; // the indexes are parameter values, the cell values are positions within a testSet
+        int k = 0;  // points into parameterPositions
+        for (int i = 0; i < legalValues.Length; ++i)
+        {
+          int[] curr = legalValues[i];
+          for (int j = 0; j < curr.Length; ++j)
+          {
+            parameterPositions[k++] = i;
+          }
+        }
+        /*ConsoleWriteLine("parameterPositions:");
+        for (int i = 0; i < parameterPositions.Length; ++i)
+        {
+          ConsoleWrite(parameterPositions[i] + " ");
+        }
+        ConsoleWriteLine("");*/
+
+	int[][] invalidCombinaisons = new int[7][];
+	if(verifTests)       
+        	invalidCombinaisons = readInvalidCombinaisonsFile(invalidCombinanaisonFile, parameters, parameterValues, parameterPositions);
         
         int currPair = 0;
         for (int i = 0; i <= legalValues.Length - 2; ++i)
@@ -200,16 +231,16 @@ namespace Gamma
               {
                 allPairsDisplay[currPair, 0] = firstRow[x]; // pair first value
                 allPairsDisplay[currPair, 1] = secondRow[y]; // pair second value
-		if(!(firstRow[x] == 0 && secondRow[y]==3))
+		if(!verifTests || (checkPair(firstRow[x], secondRow[y], invalidCombinaisons) && verifTests))
                 {
-                int[] aPair = new int[2];
-                aPair[0] = firstRow[x];
-                aPair[1] = secondRow[y];
-                unusedPairs.Add(aPair);
-                
-                unusedPairsSearch[firstRow[x], secondRow[y]] = 1;
+		        int[] aPair = new int[2];
+		        aPair[0] = firstRow[x];
+		        aPair[1] = secondRow[y];
+		        unusedPairs.Add(aPair);
+		        
+		        unusedPairsSearch[firstRow[x], secondRow[y]] = 1;
 		}
-		//unusedPairsSearch[0, 3] = 0;
+
                 
                 ++currPair;
               } // y
@@ -232,7 +263,7 @@ namespace Gamma
         //  }
         //}
         
-        ConsoleWriteLine("unusedPairs List<>:");
+        /*ConsoleWriteLine("unusedPairs List<>:");
         for (int i = 0; i < unusedPairs.Count; ++i)
         {
           int[] curr = unusedPairs[i];
@@ -247,27 +278,9 @@ namespace Gamma
             ConsoleWrite(unusedPairsSearch[row, col] + " ");
           }
           ConsoleWriteLine("");
-        }
+        }*/
         
-        // process legalValues to populate parameterPositions array
-        parameterPositions = new int[numberParameterValues]; // the indexes are parameter values, the cell values are positions within a testSet
-        int k = 0;  // points into parameterPositions
-        for (int i = 0; i < legalValues.Length; ++i)
-        {
-          int[] curr = legalValues[i];
-          for (int j = 0; j < curr.Length; ++j)
-          {
-            parameterPositions[k++] = i;
-          }
-        }
-        //ConsoleWriteLine("parameterPositions:");
-        //for (int i = 0; i < parameterPositions.Length; ++i)
-        //{
-        //  ConsoleWrite(parameterPositions[i] + " ");
-        //}
-        //ConsoleWriteLine("");
-        
-        
+
         // process allPairsDisplay to determine unusedCounts array
         unusedCounts = new int[numberParameterValues];  // inexes are parameter values, cell values are counts of how many times the parameter value apperas in the unusedPairs collection
         for (int i = 0; i < allPairsDisplay.GetLength(0); ++i)
@@ -452,7 +465,8 @@ namespace Gamma
           
           for (int i = 0; i < candidateSets.Length; ++i)
           {
-            if(isValid(candidateSets[i])){
+          if(!verifTests || (checkCombinaison(candidateSets[i], invalidCombinaisons) && verifTests))
+	{
               int pairsCaptured = NumberPairsCaptured(candidateSets[i], unusedPairsSearch);
               if (pairsCaptured > mostPairsCaptured)
               {
@@ -464,8 +478,11 @@ namespace Gamma
 		//printTab(candidateSets[i]);
             
             }
+
+	
           }
-          ConsoleWriteLine("Candidate number " + indexOfBestCandidate + " is best");
+         // ConsoleWriteLine("Candidate number " + indexOfBestCandidate + " is best");
+
           candidateSets[indexOfBestCandidate].CopyTo(bestTestSet, 0);
 		//printTab(bestTestSet);
           testSets.Add(bestTestSet); // Add the best candidate to the main testSets List
@@ -551,10 +568,10 @@ namespace Gamma
 
     static void ShowUsage() // {{{
       {
-        Console.WriteLine("Usage: qict [-c] [-h] filename");
+        Console.WriteLine("Usage: qict [-c] [-h] filename [-i] invalidCombinaisonsFilename");
         Console.WriteLine("  -c     Show only number of tests computed");
-        Console.WriteLine("  -h     Show command-line usage\n");
-	Console.WriteLine("  -i     use invalid combinaison file\n");
+        Console.WriteLine("  -h     Show command-line usage");
+	Console.WriteLine("  -i     use invalid combinaisons file\n");
     } // ShowUsage() }}}
     
     static void ConsoleWrite(string msg) // {{{
@@ -568,33 +585,156 @@ namespace Gamma
         ConsoleWrite(msg + "\n");
     } // ConsoleWrite() }}}
 
-    static bool isValid(int[] combinaison)
+    static bool checkCombinaison(int[] combinaison, int[][] invalidComb)
     {
-      int[] arrayA = combinaison;
-      int lengthA = arrayA.Length;
-     for(int i=0; i< lengthA; i++)
-      {
-       ConsoleWrite(" "+arrayA[i]);
-
-     }
-
-     if(arrayA[0]==0 && arrayA[1]==3)
-     {
-      ConsoleWriteLine(" false");
-      return false;
-
-    }
-    ConsoleWriteLine("");
-
-    return true;
+    	int cpt;
+	int nbComb = invalidComb.Length;
+	int tailleComb = combinaison.Length;
+	//printTab( combinaison);
+     	for(int i=0; i< nbComb; i++)
+      	{
+		cpt=0;
+		int nbValues = invalidComb[i].Length;
+       		for(int j=0; j< nbValues; j++)
+		{
+			for(int k=0; k< tailleComb; k++)
+			{
+				//ConsoleWrite(invalidComb[i][j] +" "+combinaison[k]+"\t");
+				if(invalidComb[i][j] == combinaison[k])
+				{
+					cpt++;
+					//ConsoleWriteLine("+++++++++++++++++++++++++++++++++++++cpt++");
+				}
+			}
+			//ConsoleWrite("\n");
+		}
+		//ConsoleWriteLine("cpt="+cpt+"  count="+countInvalidParam(invalidComb[i]));
+		if(cpt==countInvalidParam(invalidComb[i]))
+		{	
+			//ConsoleWriteLine("------>false");
+			return false;
+		}
+		//ConsoleWrite("\n");
+     	}
+    	return true;
   }
 
+    static bool checkPair(int nb1, int nb2, int[][] invalidComb)
+    {
+	int cpt;
+	int nbComb = invalidComb.Length;
+     	for(int i=0; i< nbComb; i++)
+      	{
+		cpt=0;
+		int nbValues = invalidComb[i].Length;
+       		for(int j=0; j< nbValues; j++)
+		{
+			if(invalidComb[i][j] == nb1 || invalidComb[i][j] == nb2)
+			{
+				cpt++;
+				//onsoleWriteLine("+++++++++++++++++++++++++++++++++++++cpt++");
+			}
+		}
+		//ConsoleWriteLine("cpt="+cpt+"  count="+countInvalidParam(invalidComb[i]));
+		if(cpt==countInvalidParam(invalidComb[i]))
+		{	
+			//ConsoleWriteLine("---------------->false");
+			return false;
+		}
+     	}
+    	return true;
+  }
 
-static void printTab(int[] combinaison)
+	static int[][] readInvalidCombinaisonsFile(string filename, string[] parameters, string[] parameterValues, int[] parameterPositions)
+	{
+		 
+		int nbparam = parameters.Length;
+		int nbvalue = parameterValues.Length;
+		int[][] array= new int[2][];
+		int numberLinesTotal=0;
+	
+		try
+		{
+			// do a preliminary file read to determine number of parameters and number of parameter values
+			FileStream fs = new FileStream(filename, FileMode.Open);
+			StreamReader sr = new StreamReader(fs);
+			string line;
+				
+			
+			while ((line = sr.ReadLine()) != null)
+			{
+				numberLinesTotal++;
+			}
+		
+			array= new int[numberLinesTotal][];
+ 
+			//replace 0 (can be a parameter value) by -99 (we are sure it's not a parameter value)
+			for(int aa=0;aa<numberLinesTotal;aa++)
+			{	
+				array[aa]= new int[nbvalue];
+				for(int bb=0;bb<nbvalue;bb++)
+				{
+					array[aa][bb]=-99;
+				}	
+			}
+
+			// now do a second file read to create the legalValues array, and the parameterValues array
+        		fs.Position = 0;
+			int numberLines=0;
+			
+			while ((line = sr.ReadLine()) != null)
+			{
+				  line = line.Trim();
+				  if (line == "" || line[0] == '#')
+				  continue;
+				  
+				  string[] lineTokens = line.Split('&');
+					for(int i=0; i< lineTokens.Length; i++)
+				      {
+				        string[] strValues = lineTokens[i].Split('=');
+					for(int j=0; j< nbparam; j++)
+					{
+						int posParam = 0;
+						strValues[0]= strValues[0].Trim();
+						strValues[1]= strValues[1].Trim();
+						//ConsoleWriteLine(strValues[0]+" "+parameters[j]);	
+						if(strValues[0] == parameters[j])
+						{
+							for(int k=0; k< nbvalue; k++)
+							{
+								//ConsoleWrite(parameterValues[k] +" "+ strValues[1]+"\n");
+								if(parameterPositions[k] == j && parameterValues[k] == strValues[1])
+									array[numberLines][k]=k;
+							}
+						}
+					}
+
+				     }
+				++numberLines;
+			}
+		}
+		catch (Exception ex)
+		      {
+			Console.WriteLine("Fatal: " + ex.Message);
+			//Console.ReadLine();
+			//return ERR_EXCEPTION;
+		      }
+			/*for(int aa=0;aa<numberLinesTotal;aa++)
+			{
+				for(int bb=0;bb<nbvalue;bb++)
+				{
+					 ConsoleWrite(" "+array[aa][bb]);
+				}
+				ConsoleWriteLine(" ");	
+			}*/
+		return array;
+	}
+
+	static void printTab(int[] combinaison)
     {
       int[] arrayA = combinaison;
       int lengthA = arrayA.Length;
-ConsoleWrite("------------------>");
+	ConsoleWrite("------------------>");
       for(int i=0; i< lengthA; i++)
       {
        ConsoleWrite(""+arrayA[i]+" ");
@@ -602,6 +742,18 @@ ConsoleWrite("------------------>");
      }
 	ConsoleWriteLine("");
   }
+
+	static int countInvalidParam(int[] line)
+	{
+		int nb=0;
+		int taille = line.Length;
+		for(int i=0; i<taille; i++)
+		{
+			if(line[i]>=0)
+				nb++;
+		}
+		return nb;
+	}	
 
   } // class
 } // ns

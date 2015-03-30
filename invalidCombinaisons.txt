@@ -1,3 +1,0 @@
- a = 1 & j = -1
- f = unknown & p
- h & a = 1 & f = on
