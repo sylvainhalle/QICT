@@ -214,7 +214,8 @@ namespace Gamma
         }
         ConsoleWriteLine("");*/
 
-	int[][] invalidCombinaisons = new int[7][];
+	int[][] invalidCombinaisons = null;
+
 	if(verifTests)       
         	invalidCombinaisons = readInvalidCombinaisonsFile(invalidCombinanaisonFile, parameters, parameterValues, parameterPositions);
         
@@ -247,7 +248,7 @@ namespace Gamma
             } // x
           } // j
         } // i
-        
+         
         //ConsoleWriteLine("allPairsDisplay array:");
         //for (int i = 0; i < numberPairs; ++i)
         //{
@@ -694,7 +695,7 @@ namespace Gamma
 				        string[] strValues = lineTokens[i].Split('=');
 					for(int j=0; j< nbparam; j++)
 					{
-						int posParam = 0;
+						//int posParam = 0;
 						strValues[0]= strValues[0].Trim();
 						strValues[1]= strValues[1].Trim();
 						//ConsoleWriteLine(strValues[0]+" "+parameters[j]);	
@@ -719,14 +720,14 @@ namespace Gamma
 			//Console.ReadLine();
 			//return ERR_EXCEPTION;
 		      }
-			/*for(int aa=0;aa<numberLinesTotal;aa++)
+			for(int aa=0;aa<numberLinesTotal;aa++)
 			{
 				for(int bb=0;bb<nbvalue;bb++)
 				{
 					 ConsoleWrite(" "+array[aa][bb]);
 				}
 				ConsoleWriteLine(" ");	
-			}*/
+			}
 		return array;
 	}
 
