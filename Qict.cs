@@ -28,6 +28,7 @@ where filename is a text file containing the text data (see the article
 or the sample file testData.txt included for more info)
 
 *************************************************************************/
+
 using System;
 using System.Collections.Generic;
 using System.Globalization;
