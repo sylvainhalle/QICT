@@ -1,4 +1,4 @@
-#QICT: A Pairwise Test Case Generator
+# QICT: A Pairwise Test Case Generator
 
 This program originally appeared in the [MSDN Magazine, December
 2009](http://msdn.microsoft.com/en-us/magazine/ee819137.aspx).
@@ -7,11 +7,11 @@ I took the code there (assumed to be public domain) and polished it a bit
 to add command-line parameters and a few options. The bulk of the algorithm
 remains unchanged.
 
-##How to compile
+## How to compile
 
 First, clone the repository.
 
-###Under Windows
+### Under Windows
 To run this QICT code, launch a new instance of Visual Studio 2005 or 2008.
 Create a new Console Application C# project.
 Replace the VS-generated template code in file Program.cs with the Qict.cs
@@ -19,7 +19,7 @@ code in this download.
 Copy all .txt into the root folder of your project.
 Build and run by hitting the F5 key.
 
-###Under Linux
+### Under Linux
 ```
 mcs Qict.cs -out:qict
 ```
